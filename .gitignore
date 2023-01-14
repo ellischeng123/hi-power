@@ -6,6 +6,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Nuitka build files
+main.build
+main.cmd
+main.exe
+
 # C extensions
 *.so
 
