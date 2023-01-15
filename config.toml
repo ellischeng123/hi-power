@@ -1,0 +1,5 @@
+spectrum_dir = './samples/spectrum'
+liv_dir = './samples/LIV'
+target_dir = './samples'
+#lookup_low = 6
+#lookup_high = 9

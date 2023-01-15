@@ -1,14 +1,44 @@
 import os
 import subprocess
+import tomllib
 
 import pandas as pd
 from decimal import *
 
 HEADER = 'Lookup Low,Lookup High,WL_P,Low A,High A,Low V,High V,Slope\n'
+CONFIG = dict()
+CONFIG_DICT = {
+    'spectrum_dir': 'Enter SPECTRUM files storage dir: ',
+    'liv_dir': 'Enter LIV files storage dir: ',
+    'target_dir': 'Enter the path you wish to save the result file: '
+}
 
-# 比對兩個資料夾下檔案數量，若不相符則不執行並印出警告
-# 取得檔案清單後先依檔名也就是時間排序，之後再依順序配對
-# 輸出 csv sample:
+
+def setup():
+    global CONFIG
+    getcontext().rounding = ROUND_FLOOR
+
+    if os.path.exists('./config.toml'):
+        with open('./config.toml', mode='rb') as cfile:
+            CONFIG = tomllib.load(cfile)
+
+    ask_vars()
+
+
+def ask_vars():
+    print(CONFIG)
+    existing_configs = set(CONFIG.keys())
+    config_keys = set(CONFIG_DICT.keys())
+
+    if not existing_configs >= config_keys:
+        for key in config_keys - existing_configs:
+            CONFIG[key] = os.path.abspath(input(CONFIG_DICT[key]))
+
+    if CONFIG.get('lookup_low') is None:
+        CONFIG['lookup_low'] = int(input("Enter lookup low value: "))
+
+    if CONFIG.get('lookup_high') is None:
+        CONFIG['lookup_high'] = int(input("Enter lookup high value: "))
 
 
 def process_files(target_file: str, specs: list[str], livs: list[str], l_low: int, l_high: int):
@@ -53,50 +83,30 @@ def calculate(spec_file: str, liv_file: str, l_low: int, l_high: int):
 
 
 def main():
-    getcontext().rounding = ROUND_FLOOR
+    setup()
 
-    spectrum_dir = os.path.abspath(input("Enter SPECTRUM files storage dir: "))
-    # spectrum_dir = os.path.abspath('./samples/spectrum')
-    print(spectrum_dir)
-    print()
-    liv_dir = os.path.abspath(input("Enter LIV files storage dir: "))
-    # liv_dir = os.path.abspath('./samples/LIV')
-    print(liv_dir)
-    print()
-
-    spectrum_files = os.listdir(spectrum_dir)
-    # print(spectrum_files)
-
-    liv_files = os.listdir(liv_dir)
-    # print(liv_files)
+    spectrum_files = os.listdir(CONFIG['spectrum_dir'])
+    liv_files = os.listdir(CONFIG['liv_dir'])
 
     if len(spectrum_files) != len(liv_files):
         raise RuntimeError('Spectrum files count and LIV files count not match.')
 
-    target_dir = os.path.abspath(input("Enter the file with path you wish to save the result file: "))
-    # target_dir = os.path.abspath('./samples')
-    target_file = os.path.join(target_dir, 'result.csv')
-    print()
-
-    lookup_low = int(input('lookup_low: '))
-    # lookup_low = 6
-    print()
-
-    lookup_high = int(input('lookup_high: '))
-    # lookup_high = 9
-    print()
+    target_dir = os.path.abspath(CONFIG['target_dir'])
+    target_file = os.path.join(CONFIG['target_dir'], 'result.csv')
+    lookup_low = CONFIG['lookup_low']
+    lookup_high = CONFIG['lookup_high']
 
     spectrum_files.sort()
     liv_files.sort()
 
-    spectrum_files_abs_path = [os.path.join(spectrum_dir, file) for file in spectrum_files]
-    liv_files_abs_path = [os.path.join(liv_dir, file) for file in liv_files]
+    spectrum_files_abs_path = [os.path.join(CONFIG['spectrum_dir'], file) for file in spectrum_files]
+    liv_files_abs_path = [os.path.join(CONFIG['liv_dir'], file) for file in liv_files]
 
     process_files(target_file, spectrum_files_abs_path, liv_files_abs_path, lookup_low, lookup_high)
 
     input(f"Job done, check result in {target_dir}")
     input("Result folder will be opened after you hit ENTER")
-    subprocess.Popen(f'explorer {target_dir}')
+    subprocess.Popen(f"explorer {target_dir}")
 
 
 if __name__ == '__main__':
