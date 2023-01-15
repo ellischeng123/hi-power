@@ -12,24 +12,20 @@ HEADER = 'Lookup Low,Lookup High,WL_P,Low A,High A,Low V,High V,Slope\n'
 
 
 def process_files(target_file: str, specs: list[str], livs: list[str], l_low: int, l_high: int):
-    target = open(target_file, mode='w')
-
-    try:
+    with open(target_file, mode='w') as target:
         target.write(HEADER)
         for idx, spec in enumerate(specs):
             result = calculate(spec, livs[idx], l_low, l_high)
             target.write(result)
-    finally:
-        target.write('\n')
-        target.close()
 
 
-def calculate(spec: str, liv: str, l_low: int, l_high: int):
-    spec = pd.read_csv(filepath_or_buffer=spec, skiprows=0)
-    wl_p = spec.idxmax().values[0]
+def calculate(spec_file: str, liv_file: str, l_low: int, l_high: int):
+
+    spec = pd.read_table(filepath_or_buffer=spec_file, skiprows=[0, 1], names=['wl_p', 'value'])
+    wl_p = spec['wl_p'][spec.idxmax()["value"]]
     # print(f"WL_P: {wl_p}")
 
-    liv = pd.read_csv(filepath_or_buffer=liv, header=1)
+    liv = pd.read_csv(filepath_or_buffer=liv_file, skiprows=[0, 1], names=['TCA', 'A', 'V', 'L', 'C'])
     low = liv.iloc[(liv['L'] - l_low).abs().argsort()[:1]]
     high = liv.iloc[(liv['L'] - l_high).abs().argsort()[:1]]
 
@@ -45,8 +41,12 @@ def calculate(spec: str, liv: str, l_low: int, l_high: int):
     high_v = high['V'].values[0]
     # print(f"High V: {high_v}")
 
-    slope = (Decimal(high['L'].values[0]) - Decimal(low['L'].values[0])) / \
-            (Decimal(high['A'].values[0]) - Decimal(low['A'].values[0]))
+    if not low['L'].values[0] == high['L'].values[0]:
+        slope = (Decimal(high['L'].values[0]) - Decimal(low['L'].values[0])) / \
+                (Decimal(high['A'].values[0]) - Decimal(low['A'].values[0]))
+    else:
+        slope = 0
+
     # print(f'slope: {slope : .3f}')
 
     return f"{l_low},{l_high},{wl_p},{low_a},{high_a},{low_v},{high_v},{slope}\n"

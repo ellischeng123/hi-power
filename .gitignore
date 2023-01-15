@@ -10,7 +10,11 @@ __pycache__/
 main.build
 main.cmd
 main.exe
+main.dist
 *.7z
+
+# result file
+**/result.csv
 
 # C extensions
 *.so
